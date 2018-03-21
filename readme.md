@@ -1,5 +1,3 @@
-WIP
-
 # Assembly Language Programming ["Kanshi(漢詩)"](https://en.wikipedia.org/wiki/Kanshi_(poetry))
 * アセンブラ漢詩
   * 先行研究 - https://www.slideshare.net/kozossakai/ss-68331290
@@ -9,10 +7,60 @@ WIP
 * 先行研究との違い
   * 1バイト=1文字ではなく1命令=1文字（漢字）としたい
     * それ普通のアセンブリプログラミングでは・・・？
+    * 
+* 問題点
+  * x86-64 で linux の syscall をしようとすると最大で 8 つ命令が必要(rax, rdi, rsi, rdx, r10, r8, r9 と syscall)なので 素直に七言絶句にできない
+
 
 ## 五言絶句
 
-WIP
+```asm
+section .data
+msg: db 0
+
+section .text
+global _start
+_start:
+  ; syscall(rax=read, rdi=stdin, rsi=buf, rdx=1byte)
+  mov rax, 0
+  mov rdi, 0
+  mov rsi, msg
+  mov rdx, 1
+  syscall
+
+  ; if(readlen < 1){ goto exit; }
+  cmp rax, 1
+  jne .exit
+  ; if(msg == '\n'){ goto exit; }
+  mov r11b, [msg]
+  cmp r11b, 10
+  je .exit
+
+  ; syscall(rax=write, rdi=stdout, rsi=buf, rdx=1byte)
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, msg
+  mov rdx, 1
+  syscall
+
+  ; goto start
+  jmp _start
+  nop
+.exit:
+  ; syscall(rax=exit, rdi=EXIT_SUCCESS)
+  mov rax, 60
+  mov rdi, 0
+  syscall
+
+```
+
+コンパイル
+
+```sh
+nasm -o a.o -f elf64 a.asm && ld -o a.out a.o && echo 0 | ./a.out
+```
+
+書き下し文
 
 ## memo
 
@@ -150,3 +198,4 @@ x86-64 の Linux でシステムコールを呼び出すには以下のように
 
 ### 参考
 * http://www.mztn.org/lxasm64/x86_x64_table.html
+* https://postd.cc/raw-linux-threads-via-system-calls/
